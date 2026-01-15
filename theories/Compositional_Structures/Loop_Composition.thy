@@ -155,7 +155,7 @@ function loop_composition ::
   "\<not>(t ({}, {}, A)) \<Longrightarrow> loop_composition m t A p = (loop_comp_helper m m t) A p"
   by (fastforce, simp_all)
 termination
-  using "termination" wf_empty
+  using "termination"
   by blast
 
 abbreviation loop ::

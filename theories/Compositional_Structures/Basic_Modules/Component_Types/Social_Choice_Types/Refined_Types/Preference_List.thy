@@ -438,7 +438,7 @@ proof (safe)
     by metis
   hence "a \<lesssim>\<^sub>l b"
     using above_l_def is_less_preferred_than_l.elims(3) rank_l.simps One_nat_def Suc_le_mono
-          add_Suc empty_iff find_index_le_size in_set_member index_def le_antisym list.set(1)
+          add_Suc empty_iff find_index_le_size  index_def le_antisym list.set(1)
           size_index_conv take_0 b_member
     by metis
   thus "b \<in> Order_Relation.above (pl_\<alpha> l) a"
@@ -479,7 +479,7 @@ proof (simp, safe)
   moreover have "length (above_l l a) = rank_l l a"
     unfolding above_l_def
     using Suc_le_eq
-    by (simp add: in_set_member)
+    by auto 
   ultimately show "Suc (index l a) = card (Order_Relation.above (pl_\<alpha> l) a)"
     by simp
 next
@@ -526,7 +526,7 @@ lemma ranked_alt_not_at_pos_before:
     "a \<in> set l" and
     "n < (rank_l l a) - 1"
   shows "l!n \<noteq> a"
-  using assms add_diff_cancel_right' index_first member_def rank_l.simps
+  using assms add_diff_cancel_right' index_first rank_l.simps
   by metis
 
 lemma pos_in_list_yields_pos:

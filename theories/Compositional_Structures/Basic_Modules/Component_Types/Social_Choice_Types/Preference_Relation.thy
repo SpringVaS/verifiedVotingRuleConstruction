@@ -53,8 +53,9 @@ lemma lin_imp_trans:
     r :: "'a Preference_Relation"
   assumes "linear_order_on A r"
   shows "trans r"
-  using assms order_on_defs
-  by blast
+  using assms
+  using linear_order_on_def partial_order_onD(2) by auto
+  
 
 subsection \<open>Ranking\<close>
 
@@ -128,11 +129,6 @@ lemma connex_imp_refl:
   assumes "connex A r"
   shows "refl_on A r"
 proof
-  from assms
-  show "r \<subseteq> A \<times> A"
-    unfolding connex_def limited_def
-    by simp
-next
   fix a :: "'a"
   assume "a \<in> A"
   with assms
@@ -156,8 +152,9 @@ proof (unfold connex_def limited_def, safe)
   assume "(a, b) \<in> r"
   with assms
   show "a \<in> A"
-    using partial_order_onD(1) order_on_defs(3) refl_on_domain
-    by metis
+    unfolding linear_order_on_def total_on_def partial_order_on_def
+    preorder_on_def
+    by blast
 next
   fix
     a :: "'a" and
@@ -165,8 +162,10 @@ next
   assume "(a, b) \<in> r"
   with assms
   show "b \<in> A"
-    using partial_order_onD(1) order_on_defs(3) refl_on_domain
-    by metis
+    using partial_order_onD(1) order_on_defs(3) refl_on_def
+    unfolding linear_order_on_def partial_order_on_def
+    preorder_on_def
+    by blast
 next
   fix
     a :: "'a" and
@@ -202,7 +201,8 @@ proof (unfold connex_def linear_order_on_def partial_order_on_def
     b :: "'a"
   assume "(a, b) \<in> r"
   thus "a \<in> A"
-    using connex_r refl_on_domain connex_imp_refl
+    using connex_r limited_dest is_less_preferred_than.elims(1)   
+    unfolding connex_def
     by metis
 next
   fix
@@ -210,8 +210,10 @@ next
     b :: "'a"
   assume "(a, b) \<in> r"
   thus "b \<in> A"
-    using connex_r refl_on_domain connex_imp_refl
-    by metis
+    using connex_r connex_imp_refl
+          is_less_preferred_than.elims(1) limited_dest
+    unfolding connex_def
+    by (metis)
 next
   fix a :: "'a"
   assume "a \<in> A"
@@ -356,9 +358,10 @@ lemma lin_ord_not_empty:
   fixes r :: "'a Preference_Relation"
   assumes "r \<noteq> {}"
   shows "\<not> linear_order_on {} r"
-  using assms connex_imp_refl lin_ord_imp_connex refl_on_domain subrelI
-  by fastforce
-
+  using assms connex_imp_refl lin_ord_imp_connex refl_onD subrelI
+  by (simp add: linear_order_on_def order_on_defs(1)
+      partial_order_on_def)
+  
 lemma lin_ord_singleton:
   fixes a :: "'a"
   shows "\<forall> r. linear_order_on {a} r \<longrightarrow> r = {(a, a)}"
@@ -371,7 +374,8 @@ proof (clarify)
     by metis
   moreover from lin_ord_r_a
   have "\<forall> (b, c) \<in> r. b = a \<and> c = a"
-    using connex_imp_refl lin_ord_imp_connex refl_on_domain split_beta
+    using  lin_ord_imp_connex limited_dest
+    unfolding connex_def
     by fastforce
   ultimately show "r = {(a, a)}"
     by auto
@@ -418,8 +422,8 @@ lemma above_subset_geq_one:
     "above r' a = {a}"
   shows "above r a = {a}"
   using assms connex_imp_refl above_refl insert_absorb lin_ord_imp_connex mem_Collect_eq
-        refl_on_domain singletonI subset_singletonD
-  unfolding above_def
+        refl_onD singletonI subset_singletonD is_less_preferred_than.elims(1) limited_dest
+  unfolding above_def connex_def
   by metis
 
 lemma above_connex:
@@ -471,6 +475,7 @@ lemma limit_presv_above_2:
   unfolding above_def
   by metis
 
+
 lemma above_one:
   fixes
     A :: "'a set" and
@@ -501,8 +506,10 @@ proof -
         using card_1_singletonE add.left_neutral
         by metis
       hence "a \<in> A' \<and> above r' a = {a}"
-        using above_def lin_ord_r connex_imp_refl above_refl lin_ord_imp_connex refl_on_domain
-        by fastforce
+        using lin_ord_r lin_ord_singleton 
+        unfolding above_def lin_ord_r lin_ord_singleton   
+        using lin_ord_r lin_ord_singleton by fastforce
+  
       thus "\<exists> a'. a' \<in> A' \<and> above r' a' = {a'}"
         by metis
     qed
@@ -545,8 +552,8 @@ proof -
       proof (cases)
         assume a_pref_r_b: "a \<preceq>\<^sub>r' b"
         have refl_A:
-          "\<forall> A'' r'' a' a''. (refl_on A'' r'' \<and> (a'::'a, a'') \<in> r'') \<longrightarrow> a' \<in> A'' \<and> a'' \<in> A''"
-          using refl_on_domain
+          "\<forall> A'' r'' a' a''. (linear_order_on A'' r'' \<and> (a'::'a, a'') \<in> r'') \<longrightarrow> a' \<in> A'' \<and> a'' \<in> A''"
+          using  a_pref_r_b partial_order_onD(4) mem_Sigma_iff subset_iff linear_order_on_def
           by metis
         have connex_refl: "\<forall> A'' r''. connex (A''::'a set) r'' \<longrightarrow> refl_on A'' r''"
           using connex_imp_refl
@@ -557,7 +564,7 @@ proof -
           using connex_refl lin_ord_r
           by metis
         hence "a \<in> A' \<and> b \<in> A'"
-          using refl_A a_pref_r_b
+          using refl_A a_pref_r_b lin_ord_r
           by simp
         hence b_in_r: "\<forall> a'. a' \<in> A' \<longrightarrow> (b = a' \<or> (b, a') \<in> r' \<or> (a', b) \<in> r')"
           using lin_ord_r order_on_defs(3)
@@ -592,9 +599,9 @@ proof -
           using b_wins
           by blast
         moreover have above_b_in_A: "above r' b \<subseteq> A'"
-          using lin_ord_r connex_imp_refl lin_ord_imp_connex mem_Collect_eq refl_on_domain subsetI
+          using lin_ord_r refl_A connex_imp_refl lin_ord_imp_connex mem_Collect_eq subsetI
           unfolding above_def
-          by metis
+          by auto
         ultimately have "above r' b = {b}"
           using alt_b
           unfolding above_def
@@ -663,9 +670,10 @@ proof -
           unfolding antisym_def above_def
           by metis
         moreover have above_a_in_A: "above r' a \<subseteq> A'"
-          using lin_ord_r connex_imp_refl lin_ord_imp_connex mem_Collect_eq refl_on_domain
-          unfolding above_def
-          by fastforce
+          using lin_ord_r lin_ord_imp_connex mem_Collect_eq
+          above_def connex_def is_less_preferred_than.elims(1) limited_dest
+              subsetI
+          by metis
         ultimately have "above r' a = {a}"
           using a
           unfolding above_def
@@ -744,8 +752,8 @@ proof -
   have "a \<in> A"
     unfolding rank.simps above_def linear_order_on_def partial_order_on_def preorder_on_def
               total_on_def
-    using card_1_singletonE insertI1 mem_Collect_eq refl_onD1
-    by metis
+    using card_1_singletonE card_Suc_eq_finite insertI1 mem_Collect_eq SigmaE2 subsetD 
+    by fastforce
   ultimately have "a \<in> above r a"
     using above_refl
     by fastforce
@@ -788,10 +796,11 @@ proof (unfold rank.simps above_def, clarify)
     unfolding linear_order_on_def total_on_def
     by metis
   have sets_eq: "{a'. (a, a') \<in> r} = {a'. (b, a') \<in> r}"
-    using card_subset_eq connex_imp_refl lin_ord lin_ord_imp_connex mem_Collect_eq refl_on_domain
-          rev_finite_subset subset_eq transE
-    using card_eq fin_A r_trans r_total
-    by (smt (verit, best))
+    using card_subset_eq connex_imp_refl lin_ord lin_ord_imp_connex mem_Collect_eq linear_order_on_def
+          rev_finite_subset subset_eq transE is_less_preferred_than.elims(3) card_eq fin_A r_trans r_total
+          limited_dest
+    unfolding linear_order_on_def connex_def
+    by (smt (verit, best)) 
   hence "(b, a) \<in> r"
     using a_in_A above_connex lin_ord lin_ord_imp_connex
     unfolding above_def
@@ -936,9 +945,9 @@ proof (simp)
     using a'_pref_a
     by simp
   hence a'_in_A: "a' \<in> A"
-    using lifted connex_imp_refl lin_ord_imp_connex refl_on_domain
-    unfolding equiv_rel_except_a_def lifted_def
-    by metis
+    using lifted lin_ord_imp_connex a'_pref_a connex_def limited_dest
+    unfolding equiv_rel_except_a_def lifted_def limited_dest
+    by (metis)
   have "\<forall> b \<in> A - {a}. \<forall> b' \<in> A - {a}. (b \<preceq>\<^sub>r b') = (b \<preceq>\<^sub>r' b')"
     using lifted
     unfolding lifted_def equiv_rel_except_a_def
@@ -1009,9 +1018,9 @@ proof (unfold above_def, safe)
     by metis
   from a_pref_x assms
   have "a' \<in> A"
-    using connex_imp_refl lin_ord_imp_connex refl_onD2
-    unfolding equiv_rel_except_a_def lifted_def
-    by metis
+    using is_less_preferred_than.simps limited_dest lin_ord_imp_connex
+    unfolding connex_def equiv_rel_except_a_def lifted_def
+    by (metis)
   with a_pref_x lifted_r rest_eq trans_r trans_s refl_r
   show "(a, a') \<in> r"
     using Diff_iff singletonD
@@ -1043,9 +1052,10 @@ proof (safe, simp)
     by simp
   hence "(b \<in> above r a') = (b \<in> above r' a')"
     using lifted_a b_not_in_above_s lifted_mono2 limited_dest lifted_def lin_ord_imp_connex
-          member_remove pref_imp_in_above
-    unfolding equiv_rel_except_a_def remove_def connex_def
-    by metis
+          pref_imp_in_above insert_Diff_single insert_absorb insert_iff
+    unfolding equiv_rel_except_a_def connex_def
+    by (metis)
+    
   thus "b = a"
     using b_in_above_r b_not_in_above_s
     by simp
@@ -1219,8 +1229,8 @@ next
       by metis
     moreover have "a' \<in> A - {a}"
       using above_one above_one_2 a_neq_a' assms calculation
-            insert_not_empty member_remove insert_absorb
-      unfolding equiv_rel_except_a_def remove_def
+            insert_not_empty insert_absorb insert_Diff_single insert_absorb insert_iff
+      unfolding equiv_rel_except_a_def 
       by metis
     ultimately have "\<forall> a'' \<in> A - {a}. a'' \<preceq>\<^sub>r' a'"
       using DiffD1 lifted_a
